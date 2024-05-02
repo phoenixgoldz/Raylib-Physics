@@ -1,13 +1,17 @@
+#include "World.h"
+
 #include <stdlib.h>
 #include <assert.h>
-#include "world.h"
+#include <string.h>
 
-Body* bodies = NULL;
-int bodyCount = 0;
+ncBody* bodies = NULL;
+int ncbodyCount = 0;
 
-Body* CreateBody() {
-    Body* newBody = (Body*)malloc(sizeof(Body));
+ncBody* CreateBody() {
+    ncBody* newBody = (ncBody*)malloc(sizeof(ncBody));
     assert(newBody != NULL);
+
+    memset(newBody, 0, sizeof(ncBody));
 
     newBody->position = (Vector2){ 0, 0 };
     newBody->velocity = (Vector2){ 0, 0 };
@@ -22,12 +26,12 @@ Body* CreateBody() {
 
     bodies = newBody;
 
-    bodyCount++;
+    ncbodyCount++;
 
     return newBody;
 }
 
-void DestroyBody(Body* body) {
+void DestroyBody(ncBody* body) {
     assert(body != NULL);
 
     if (bodies == body) {
@@ -42,7 +46,7 @@ void DestroyBody(Body* body) {
         body->next->prev = body->prev;
     }
 
-    bodyCount--;
+    ncbodyCount--;
 
     free(body);
 }

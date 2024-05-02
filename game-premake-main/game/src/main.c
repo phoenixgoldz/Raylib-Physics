@@ -1,51 +1,70 @@
 #include "raylib.h"
 #include "World.h"
+#include "integrator.h"
+
+#include <Mathf.h>
 #include <stdlib.h>
 
-#define MAX_BODIES 10000
-
-float GetRandomFloatValue(float min, float max) {
-    return min + ((float)rand() / RAND_MAX) * (max - min);
-}
+extern ncBody* bodies;
+extern int ncbodyCount;
 
 int main(void) {
-    InitWindow(1280, 720, "Raylib Physics Engine");
-    SetTargetFPS(120);
+	InitWindow(1280, 720, "Raylib Physics Engine");
+	SetTargetFPS(60);
 
-    bodyCount = 0; // Reset body count
-    bodies = NULL; // Reset bodies list
+	// Game loop
+	while (!WindowShouldClose()) 
+	{
 
-    // Game loop
-    while (!WindowShouldClose()) {
-        // Update
-        float dt = GetFrameTime();
-        float fps = (float)GetFPS();
+		// Update
+		float dt = GetFrameTime();
+		float fps = (float)GetFPS();
 
-        Vector2 position = GetMousePosition();
-        if (IsMouseButtonDown(0)) {
-            Body* newBody = CreateBody();
-            newBody->position = position;
-            newBody->velocity = (Vector2){ GetRandomFloatValue(-5, 5), GetRandomFloatValue(-5, 5) };
-        }
+		Vector2 position = GetMousePosition(); // Correctly declared as Vector2
 
-        // Render
-        BeginDrawing();
-        ClearBackground(BLACK);
-        DrawCircle((int)position.x, (int)position.y, 10, YELLOW);
-        for (Body* body = bodies; body != NULL; body = body->next) {
-            body->position.x += body->velocity.x;
-            body->position.y += body->velocity.y;
-            DrawCircle((int)body->position.x, (int)body->position.y, 10, RED);
-        }
+		if (IsMouseButtonDown(0)) {
+			ncBody* newBody = CreateBody();
+			newBody->position = position;
+			newBody->mass = GetRandomFloatValue(5,10);
+		}
 
+		//apply force
+		ncBody* body = bodies;
+		while (body)
+		{
+			ApplyForce(body, CreateVector2(0, -50));
+			body = body->next;
+		}
 
-        // Stats
-        DrawText(TextFormat("FPS: %.2f (%.2f ms)", fps, 1000 / fps), 10, 10, 20, LIME);
-        DrawText(TextFormat("FRAME: %.2f ", dt, 1000 / fps), 10, 30, 20, LIME);
+		// Update bodies
+		body = bodies;
+		while (body)
+		{
+			ExplicitEuler(body, dt);
+			body->position.x += body->velocity.x;
+			body->position.y += body->velocity.y;
+			body = body->next;
+		}
 
-        EndDrawing();
-    }
+		// Render or Draw
+		BeginDrawing();
+		ClearBackground(BLACK);
 
-    CloseWindow();
-    return 0;
+		// Stats
+		DrawText(TextFormat("FPS: %.2f (%.2f ms)", fps, 1000.0f / fps), 10, 10, 20, LIME);
+		DrawText(TextFormat("FRAME: %.2f ", dt), 10, 30, 20, LIME);
+
+		// Draw bodies
+		body = bodies;
+		while (body)
+		{
+			DrawCircle(body->position.x, body->position.y, body->mass, RED);
+			body = body->next;
+		}
+
+		EndDrawing();
+	}
+
+	CloseWindow();
+	return 0;
 }

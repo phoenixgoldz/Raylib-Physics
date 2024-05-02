@@ -265,6 +265,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="integrator.h" />
     <ClInclude Include="Mathf.h" />
     <ClInclude Include="src\Body.h" />
     <ClInclude Include="src\screens.h" />
