@@ -92,11 +92,11 @@ void ResolveContacts(ncContact_t* contacts)
         // Calculate restitution
         float e = contact->restitution;
 
-        // Calculate impulse scalar
+        // Calculate impulse 
         float j = -(1 + e) * velocityAlongNormal;
         j /= (1 / contact->body1->mass + 1 / contact->body2->mass);
 
-        // Apply impulse
+        // Apply impulse to contact
         Vector2 impulse = Vector2Scale(contact->normal, j);
         if (contact->body1->bodytype == BT_DYNAMIC)
             contact->body1->velocity = Vector2Subtract(contact->body1->velocity, Vector2Scale(impulse, 1 / contact->body1->mass));
