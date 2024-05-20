@@ -17,6 +17,15 @@ void AddContact(ncContact_t* contact, ncContact_t** contacts)
 	*contacts = contact;
 }
 
+void DestroyContacts(ncContact_t* contacts) {
+	ncContact_t* current = contacts;
+	while (current != NULL) {
+		ncContact_t* next = current->next;
+		free(current);
+		current = next;
+	}
+}
+
 void DestroyAllContacts(ncContact_t** contacts)
 {
 	if (!*contacts) return;

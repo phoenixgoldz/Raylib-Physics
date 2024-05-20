@@ -14,4 +14,5 @@ typedef struct ncContact
 } ncContact_t;
 
 void AddContact(ncContact_t* contact, ncContact_t** contacts);
+void DestroyContacts(ncContact_t* contacts);
 void DestroyAllContacts(ncContact_t** contacts);
