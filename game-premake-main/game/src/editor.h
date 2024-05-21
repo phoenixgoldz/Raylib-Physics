@@ -4,7 +4,6 @@
 typedef struct ncEditorData
 {
     Vector2 anchor01;
-
     bool EditorBoxActive;
     float MassValue;
     float GravitationValue;
@@ -14,6 +13,11 @@ typedef struct ncEditorData
     float GravityScaleValue;
     float GravityValue;
     float StiffnessValue;
+
+    // New variables for GUI elements
+    float FixedTimeStep;
+    bool Simulate;
+
 } ncEditorData_t;
 
 extern ncEditorData_t ncEditorData;

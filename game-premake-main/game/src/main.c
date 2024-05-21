@@ -15,6 +15,15 @@
 #include <stdlib.h>
 #include <assert.h>
 
+bool simulationRunning = true;
+
+void ResetSimulation()
+{
+    // Destroy all bodies and springs
+    DestroyAllBodies();
+    DestroyAllSprings();
+}
+
 int main(void)
 {
     ncBody* selectedBody = NULL;
@@ -33,95 +42,131 @@ int main(void)
 
     ncGravity = (Vector2){ 0, -1 };
 
-    // Fixed time step variables
-    const float fixedTimestep = 1.0f / 50.0f;
-    float timeAccumulator = 0.0f;
+    float timeAccumulator = 0.0f; // Initialize time accumulator
 
     // Game loop
     while (!WindowShouldClose())
     {
         // Update
         float dt = GetFrameTime();
-        timeAccumulator += dt;
-        float fps = 1.0f / dt;
+        timeAccumulator += dt; // Accumulate time
         Vector2 position = GetMousePosition();
         ncScreenZoom += GetMouseWheelMove() * 0.2f;
         ncScreenZoom = Clamp(ncScreenZoom, 0.1f, 10);
 
         UpdateEditor(position); // Update editor
 
-        selectedBody = GetBodyIntersect(bodies, position);
-        if (selectedBody)
+        if (ncEditorData.Simulate)
         {
-            Vector2 screen = ConvertWorldToScreen(selectedBody->position);
-            DrawCircleLines((int)screen.x, (int)screen.y, ConvertWorldToPixels(selectedBody->mass * 0.5f) + 5, YELLOW);
-        }
-
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        {
-            float angle = GetRandomFloatValue(0, 360);
-            for (int i = 0; i < 1; i++)
-            {
-                ncBody* body = CreateBody(ConvertScreenToWorld(position), ncEditorData.MassValue, ncEditorData.MassValue);
-                body->damping = ncEditorData.DampingValue;
-                body->gravityScale = ncEditorData.GravityScaleValue;
-                body->color = WHITE; // ColorFromHSV(GetRandomFloatValue(0, 360), 1, 1);
-            }
-        }
-
-        if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_LEFT)) && IsKeyPressed(KEY_T))
-        {
+            selectedBody = GetBodyIntersect(bodies, position);
             if (selectedBody)
             {
-                connectBody = selectedBody;
+                Vector2 screen = ConvertWorldToScreen(selectedBody->position);
+                DrawCircleLines((int)screen.x, (int)screen.y, ConvertWorldToPixels(selectedBody->mass * 0.5f) + 5, YELLOW);
             }
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                float angle = GetRandomFloatValue(0, 360);
+                for (int i = 0; i < 1; i++)
+                {
+                    ncBody* body = CreateBody(ConvertScreenToWorld(position), ncEditorData.MassValue, ncEditorData.MassValue);
+                    body->damping = ncEditorData.DampingValue;
+                    body->gravityScale = ncEditorData.GravityScaleValue;
+                    body->color = WHITE; // ColorFromHSV(GetRandomFloatValue(0, 360), 1, 1);
+                }
+            }
+
+            if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_LEFT)) && IsKeyPressed(KEY_T))
+            {
+                if (selectedBody)
+                {
+                    connectBody = selectedBody;
+                }
+            }
+
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && connectBody)
+                DrawLineBodyToPosition(connectBody, position);
+
+            if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+            {
+                if (connectBody && selectedBody && connectBody != selectedBody)
+                {
+                    // Check if the mouse is over the selected body when releasing the right mouse button
+                    if (CheckCollisionPointCircle(position, selectedBody->position, ConvertWorldToPixels(selectedBody->mass * 0.5f)))
+                    {
+                        // AddSpring(spring);
+                    }
+                    ncSpring_t* spring = CreateSpring(connectBody, selectedBody, Vector2Distance(connectBody->position, selectedBody->position), 20);
+                }
+                connectBody = NULL; // Reset connectBody after releasing right mouse button
+            }
+
+            // Fixed timestep loop
+            while (timeAccumulator >= ncEditorData.FixedTimeStep)
+            {
+                // Apply forces
+                ApplyGravitation(bodies, ncEditorData.GravitationValue);
+
+                // Correct the function call with proper arguments
+                ApplySpringForce(ncSprings);
+
+                // Update physics
+                for (ncBody* body = bodies; body; body = body->next)
+                {
+                    Step(body, ncEditorData.FixedTimeStep);
+                }
+
+                // Update collisions and contacts
+                DestroyContacts(contacts);
+                contacts = NULL;
+                CreateContacts(bodies, &contacts);
+                SeparateContacts(contacts);
+                ResolveContacts(contacts);
+
+                timeAccumulator -= ncEditorData.FixedTimeStep;
+            }
+        }
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && selectedBody)
+        {
+            connectBody = selectedBody;
         }
 
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && connectBody)
+        { 
             DrawLineBodyToPosition(connectBody, position);
+        }
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+            if (selectedBody && selectedBody != connectBody) {
 
+            }
+        }
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
         {
-            if (connectBody && selectedBody && connectBody != selectedBody)
-            {
-                // Check if the mouse is over the selected body when releasing the right mouse button
-                if (CheckCollisionPointCircle(position, selectedBody->position, ConvertWorldToPixels(selectedBody->mass * 0.5f)))
-                {
-                    // AddSpring(spring);
-                }
-                ncSpring_t* spring = CreateSpring(connectBody, selectedBody, Vector2Distance(connectBody->position, selectedBody->position), 20);
-            }
-            connectBody = NULL; // Reset connectBody after releasing right mouse button
+            selectedBody = NULL;
+            connectBody = NULL;
         }
 
-        // Fixed timestep loop
-        while (timeAccumulator >= fixedTimestep)
+        //drag body
+        if (IsKeyDown(KEY_LEFT_ALT))
         {
-            // Apply forces
-            ApplyGravitation(bodies, ncEditorData.GravitationValue);
-            ApplySpringForce(ncSprings);
-
-            // Update physics
-            for (ncBody* body = bodies; body; body = body->next)
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && selectedBody) connectBody = selectedBody;
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && connectBody) DrawLineBodyToPosition(connectBody, position);
+            if (connectBody)
             {
-                Step(body, fixedTimestep);
+                Vector2 world = ConvertScreenToWorld(position);
+                ApplySpringForcePosition(world, connectBody, 0, 20, 5);
             }
-
-            // Update collisions and contacts
-            DestroyContacts(contacts);
-            contacts = NULL;
-            CreateContacts(bodies, &contacts);
-            SeparateContacts(contacts);
-            ResolveContacts(contacts);
-
-            timeAccumulator -= fixedTimestep;
         }
+
 
         // Render
         BeginDrawing();
         ClearBackground(BLACK);
 
         // Stats
+        float fps = 1.0f / dt;
         DrawText(TextFormat("FPS: %.2f (%.2f ms)", fps, 1000.0f / fps), 10, 10, 20, LIME);
         DrawText(TextFormat("FRAME: %.4f", dt), 10, 30, 20, LIME);
 

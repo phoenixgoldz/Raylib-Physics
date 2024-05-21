@@ -22,7 +22,8 @@ void InitEditor()
 
     ncEditorData.anchor01 = (Vector2){ 950, 48 };
     ncEditorData.EditorBoxActive = true;
-    // body
+
+    // Initialize body parameters
     ncEditorData.BodyTypeEditMode = false;
     ncEditorData.BodyTypeActive = 0;
     ncEditorData.MassValue = 2.0f;
@@ -30,19 +31,23 @@ void InitEditor()
     ncEditorData.GravityScaleValue = 1.0f;
     ncEditorData.StiffnessValue = 10.0f;
 
-    // world
+    // Initialize world parameters
     ncEditorData.GravityValue = 0.0f;
     ncEditorData.GravitationValue = 0.0f;
+
+    // Initialize fixed timestep and simulation control
+    ncEditorData.FixedTimeStep = 1.0f / 50.0f; // Default value
+    ncEditorData.Simulate = true; // Default value
 
     editorRect = (Rectangle){ ncEditorData.anchor01.x + 0, ncEditorData.anchor01.y + 0, 304, 616 };
 }
 
 void UpdateEditor(Vector2 position)
 {
-    // toggle show / hide editor box with key press
+    // Toggle show/hide editor box with key press
     if (IsKeyPressed(KEY_TAB)) ncEditorData.EditorBoxActive = !ncEditorData.EditorBoxActive;
 
-    // check if cursor position is intersecting the editor box 
+    // Check if cursor position is intersecting the editor box 
     ncEditorIntersect = ncEditorData.EditorBoxActive && CheckCollisionPointRec(position, editorRect);
 }
 
@@ -64,6 +69,22 @@ void DrawEditor(Vector2 position)
         GuiSlider((Rectangle) { ncEditorData.anchor01.x + 120, ncEditorData.anchor01.y + 384, 120, 16 }, "Gravitation", TextFormat("%0.2f", ncEditorData.GravitationValue), & ncEditorData.GravitationValue, 0, 40);
         GuiSlider((Rectangle) { ncEditorData.anchor01.x + 120, ncEditorData.anchor01.y + 360, 120, 16 }, "Gravity", TextFormat("%0.2f", ncEditorData.GravityValue), & ncEditorData.GravityValue, -10, 10);
 
+        // GUI Slider for Fixed Time Step
+        GuiSliderBar((Rectangle) { ncEditorData.anchor01.x + 112, ncEditorData.anchor01.y + 264, 120, 16 }, "Fixed Time Step", TextFormat("%0.3f", ncEditorData.FixedTimeStep), & ncEditorData.FixedTimeStep, 1.0f / 120.0f, 1.0f / 30.0f);
+
+        // Toggle Button for Simulation Control
+        if (GuiButton((Rectangle) { ncEditorData.anchor01.x + 24, ncEditorData.anchor01.y + 288, 120, 24 }, ncEditorData.Simulate ? "Stop Simulation" : "Start Simulation"))
+        {
+            ncEditorData.Simulate = !ncEditorData.Simulate;
+        }
+
+        // Button to Reset Simulation
+        if (GuiButton((Rectangle) { ncEditorData.anchor01.x + 150, ncEditorData.anchor01.y + 288, 120, 24 }, "Reset Simulation"))
+        {
+            // Function to reset the simulation will be implemented in main.c
+            // We'll set a flag here
+            ResetSimulation();
+        }
 
         if (GuiDropdownBox((Rectangle) { ncEditorData.anchor01.x + 40, ncEditorData.anchor01.y + 96, 192, 24 }, "DYNAMIC;KINEMATIC;STATIC", & ncEditorData.BodyTypeActive, ncEditorData.BodyTypeEditMode)) ncEditorData.BodyTypeEditMode = !ncEditorData.BodyTypeEditMode;
     }
